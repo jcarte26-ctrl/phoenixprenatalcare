@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Access to Prenatal Care in the Phoenix Metropolitan Area</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --indigo:#2c2a4a;        /* dusk sky / primary text */
+    --indigo-soft:#4a4368;
+    --turquoise:#1f9e92;     /* interactive accent */
+    --turquoise-dk:#157a70;
+    --saguaro:#5b7f4d;       /* cactus green */
+    --coral:#df6c4f;         /* sunset clay */
+    --coral-dk:#c6553a;
+    --gold:#e9a23b;          /* desert sun */
+    --sand:#fbf1e0;          /* page background */
+    --sand-2:#f5e6cf;
+    --card:#fffaf1;
+    --line:#e6d4ba;
+    --ink-2:#6b6076;
+    --danger:#b23a2e;
+    --shadow:0 1px 2px rgba(44,42,74,.06),0 8px 24px rgba(44,42,74,.08);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--sand);color:var(--indigo);
+    font-family:"DM Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.55;letter-spacing:.014em;-webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:"Fraunces",Georgia,serif;font-weight:600;line-height:1.12;margin:0;letter-spacing:.01em}
+  a{color:var(--turquoise-dk);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+  /* ---------- Top bar ---------- */
+  header.top{
+    position:sticky;top:0;z-index:1200;background:rgba(251,241,224,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .top-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:"Fraunces";font-weight:600;font-size:1.02rem;color:var(--indigo)}
+  .brand svg{flex:none}
+  .lang{display:inline-flex;border:1.5px solid var(--turquoise);border-radius:999px;overflow:hidden;font-weight:600;font-size:.85rem}
+  .lang button{border:0;background:transparent;color:var(--turquoise-dk);padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:600}
+  .lang button.active{background:var(--turquoise);color:#fff}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero-sky{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .hero-inner{position:relative;z-index:2;padding:54px 0 230px}
+  .brought{display:inline-flex;align-items:center;gap:14px;background:#fffaf1;
+    border:1px solid rgba(255,255,255,.65);padding:9px 18px;border-radius:999px;
+    box-shadow:0 8px 24px rgba(44,42,74,.22);margin-bottom:22px}
+  .bb-label{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink-2);white-space:nowrap}
+  .bb-logo{height:27px;width:auto;display:block}
+  @media (max-width:560px){.brought{gap:10px;padding:8px 14px}.bb-logo{height:21px}.bb-label{font-size:.62rem}}
+  .eyebrow{display:inline-block;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+    color:#fff;background:rgba(44,42,74,.34);border:1px solid rgba(255,255,255,.35);padding:6px 12px;border-radius:999px;backdrop-filter:blur(2px)}
+  .hero h1{color:#fff;font-size:clamp(2.1rem,5.4vw,3.5rem);margin:18px 0 12px;max-width:14ch;text-shadow:0 2px 18px rgba(44,42,74,.35)}
+  .hero p.lede{color:#fff;font-size:clamp(1rem,2.2vw,1.18rem);max-width:46ch;margin:0;text-shadow:0 1px 12px rgba(44,42,74,.45)}
+  @keyframes sunGlow{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+  .sun{transform-origin:center;animation:sunGlow 7s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){.sun{animation:none}}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{position:sticky;top:62px;z-index:1100;background:var(--sand);border-bottom:1px solid var(--line)}
+  .tabs-inner{display:flex;gap:6px;overflow-x:auto;padding:10px 0}
+  .tab{flex:none;display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--card);
+    color:var(--indigo);padding:11px 18px;border-radius:999px;cursor:pointer;font-family:"DM Sans";font-weight:600;font-size:.96rem}
+  .tab:hover{border-color:var(--turquoise)}
+  .tab.active{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .tab.active svg [stroke]{stroke:#fff}
+  .tab.active svg [fill]:not([fill="none"]){fill:#fff}
+
+  main{padding:34px 0 60px}
+  section.panel{display:none}
+  section.panel.active{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .section-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .section-head h2{font-size:clamp(1.6rem,3.6vw,2.3rem)}
+  .count-pill{font-size:.8rem;font-weight:700;color:var(--turquoise-dk);background:#e3f3f0;border:1px solid #bfe4de;padding:4px 11px;border-radius:999px}
+  .section-sub{color:var(--ink-2);max-width:62ch;margin:6px 0 22px}
+
+  /* horizon divider (signature) */
+  .horizon{height:30px;margin:30px 0;background-repeat:repeat-x;background-position:bottom;background-size:auto 100%;opacity:.9}
+
+  /* ---------- Neighborhood pills ---------- */
+  .hoods{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .hood{border:1px solid var(--line);background:var(--card);color:var(--indigo-soft);
+    padding:8px 15px;border-radius:999px;cursor:pointer;font-weight:600;font-size:.9rem;font-family:inherit}
+  .hood:hover{border-color:var(--coral)}
+  .hood.active{background:var(--coral);color:#fff;border-color:var(--coral)}
+  .hood .n{opacity:.7;font-weight:600}
+  .hood.active .n{opacity:.9}
+
+  /* ---------- Cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;box-shadow:var(--shadow);position:relative}
+  .card .hoodtag{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--saguaro)}
+  .card h3{font-size:1.12rem;margin:5px 0 8px;line-height:1.2}
+  .card .addr{color:var(--ink-2);font-size:.9rem;margin:0 0 12px;display:flex;gap:7px}
+  .card .addr svg{flex:none;margin-top:3px}
+  .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600;padding:8px 13px;border-radius:10px;border:1px solid transparent;cursor:pointer;font-family:inherit}
+  .btn-map{background:var(--turquoise);color:#fff}
+  .btn-map:hover{background:var(--turquoise-dk);text-decoration:none}
+  .btn-call{background:#fff;border-color:var(--line);color:var(--indigo)}
+  .btn-call:hover{border-color:var(--turquoise);text-decoration:none}
+  .badge{position:absolute;top:14px;right:14px;font-size:.66rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .badge-conf{background:#fbe9e3;color:var(--coral-dk);border:1px solid #f3cabb}
+  .badge-preg{background:#fdf0d8;color:#a9742a;border:1px solid #f0d9a8}
+  .badge-fqhc{background:#e6f1de;color:#4d6b3c;border:1px solid #cbe0bb}
+  .card .note{font-size:.82rem;color:var(--ink-2);margin:10px 0 2px;padding-top:10px;border-top:1px dashed var(--line)}
+
+  /* ---------- Map ---------- */
+  .map-card{margin-top:26px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:var(--card)}
+  .map-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .map-head h3{font-size:1.15rem}
+  .map-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--ink-2)}
+  .map-legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+  .leaflet-container{height:460px;width:100%;background:#dfe9e3;font-family:inherit}
+  .leaflet-popup-content{margin:12px 14px;font-family:"DM Sans"}
+  .pin-name{font-weight:700;font-size:.98rem;color:var(--indigo);font-family:"Fraunces"}
+  .pin-addr{color:var(--ink-2);font-size:.84rem;margin:3px 0 8px}
+  .pin-link{font-weight:600;font-size:.85rem}
+
+  /* ---------- Disclaimer ---------- */
+  .disclaimer{display:flex;gap:12px;background:#fff7e9;border:1px solid #f0dcb4;border-radius:var(--radius);padding:14px 16px;margin-bottom:24px;font-size:.88rem;color:#7a5b22}
+  .disclaimer svg{flex:none;margin-top:2px}
+
+  /* ---------- Emergency strip (resources) ---------- */
+  .emergency{background:linear-gradient(135deg,#3a2330,#5a2a2a);border-radius:20px;padding:22px;color:#fff;margin-bottom:30px;box-shadow:var(--shadow)}
+  .emergency h2{color:#fff;font-size:1.5rem;display:flex;align-items:center;gap:10px}
+  .emergency .e-sub{color:#f3d8cf;margin:6px 0 16px;font-size:.92rem}
+  .e-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .e-item{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:13px;padding:13px 15px}
+  .e-item .lbl{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:#f0c9bd;font-weight:700}
+  .e-item .num{font-family:"Fraunces";font-size:1.45rem;font-weight:600;color:#fff;display:block;margin:3px 0 2px}
+  .e-item .num a{color:#fff}
+  .e-item small{color:#e9cabf;font-size:.78rem}
+
+  /* ---------- Need chooser ---------- */
+  .chooser{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:30px;box-shadow:var(--shadow)}
+  .chooser h2{font-size:1.5rem;margin-bottom:4px}
+  .chooser p{color:var(--ink-2);margin:0 0 16px;font-size:.92rem}
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{display:flex;align-items:center;gap:9px;background:var(--sand);border:1px solid var(--line);border-radius:13px;
+    padding:12px 15px;cursor:pointer;font-weight:600;font-size:.92rem;color:var(--indigo);text-align:left;font-family:inherit}
+  .chip:hover{border-color:var(--turquoise);background:#fff}
+  .chip .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;color:#fff}
+
+  /* ---------- Resource cards ---------- */
+  .res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+  .res{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);scroll-margin-top:140px;transition:box-shadow .3s,border-color .3s}
+  .res.flash{border-color:var(--gold);box-shadow:0 0 0 3px rgba(233,162,59,.35),var(--shadow)}
+  .res .rh{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+  .res .ric{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex:none;color:#fff}
+  .res h3{font-size:1.18rem}
+  .res p{font-size:.92rem;color:#4b4357;margin:0 0 10px}
+  .res ul{margin:0;padding-left:0;list-style:none}
+  .res li{font-size:.9rem;padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .res li:first-child{border-top:0}
+  .res li .k{color:var(--indigo);font-weight:600}
+  .res li .v{color:var(--turquoise-dk);font-weight:600;white-space:nowrap;text-align:right}
+  .res li .v.plain{color:var(--ink-2);font-weight:500}
+
+  /* ---------- Accordion (trimester) ---------- */
+  .road{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-top:24px}
+  .road-head{padding:18px 20px;border-bottom:1px solid var(--line)}
+  .road-head h3{font-size:1.3rem}
+  .road-head p{color:var(--ink-2);font-size:.9rem;margin:4px 0 0}
+  .acc{border-top:1px solid var(--line)}
+  .acc:first-of-type{border-top:0}
+  .acc-btn{width:100%;display:flex;align-items:center;gap:14px;background:transparent;border:0;padding:16px 20px;cursor:pointer;font-family:inherit;text-align:left}
+  .acc-btn:hover{background:var(--sand)}
+  .acc-num{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:"Fraunces";font-weight:700;color:#fff;font-size:.95rem}
+  .acc-btn .at{font-family:"Fraunces";font-weight:600;font-size:1.08rem;flex:1}
+  .acc-btn .ax{font-size:1.3rem;color:var(--ink-2);transition:transform .25s}
+  .acc.open .ax{transform:rotate(45deg)}
+  .acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .acc-body .inner{padding:0 20px 18px 68px;color:#4b4357;font-size:.92rem}
+  .acc-body li{margin:6px 0}
+
+  footer{border-top:1px solid var(--line);background:var(--sand-2);padding:30px 0;font-size:.84rem;color:var(--ink-2)}
+  footer .wrap>p{margin:6px 0}
+  footer strong{color:var(--indigo)}
+
+  .hidden{display:none!important}
+  @media (max-width:560px){
+    .hero-inner{padding:40px 0 180px}
+    .leaflet-container{height:380px}
+    .e-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" fill="#df6c4f"/>
+        <circle cx="12" cy="11" r="3.1" fill="#fffaf1"/>
+      </svg>
+      <span data-i18n="brand">Prenatal Care • Phoenix Metro</span>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+      <button id="btn-es" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<div class="hero">
+  <svg class="hero-sky" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3b3566"/>
+        <stop offset="42%" stop-color="#7d4f74"/>
+        <stop offset="70%" stop-color="#df6c4f"/>
+        <stop offset="100%" stop-color="#e9a23b"/>
+      </linearGradient>
+      <radialGradient id="sunG" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffe9b0"/>
+        <stop offset="60%" stop-color="#f6b24a"/>
+        <stop offset="100%" stop-color="#f6b24a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="520" fill="url(#sky)"/>
+    <circle class="sun" cx="870" cy="300" r="120" fill="url(#sunG)"/>
+    <circle cx="870" cy="300" r="62" fill="#ffdf91"/>
+    <!-- distant ridge -->
+    <path d="M0 360 L180 320 L360 350 L560 312 L780 348 L1000 320 L1200 352 V520 H0 Z" fill="#8a4f5f" opacity=".55"/>
+    <!-- mid ground -->
+    <path d="M0 410 L220 380 L470 408 L720 378 L980 406 L1200 384 V520 H0 Z" fill="#6e3b46" opacity=".75"/>
+    <!-- foreground with saguaros -->
+    <g fill="#3a2233">
+      <path d="M0 470 L1200 470 V520 H0 Z"/>
+      <!-- saguaro 1 -->
+      <g transform="translate(120,470)">
+        <path d="M-9 0 V-118 a9 9 0 0 1 18 0 V0 Z"/>
+        <path d="M-9 -78 q-26 0 -26 26 v14 a8 8 0 0 0 16 0 v-12 q0-12 10-12 Z"/>
+        <path d="M9 -92 q26 0 26 26 v22 a8 8 0 0 1 -16 0 v-20 q0-12 -10-12 Z"/>
+      </g>
+      <!-- saguaro 2 small -->
+      <g transform="translate(300,470) scale(.7)">
+        <path d="M-9 0 V-110 a9 9 0 0 1 18 0 V0 Z"/>
+        <path d="M9 -70 q24 0 24 24 v18 a8 8 0 0 1 -15 0 v-16 q0-11 -9-11 Z"/>
+      </g>
+      <!-- saguaro 3 -->
+      <g transform="translate(1040,470) scale(1.15)">
+        <path d="M-9 0 V-120 a9 9 0 0 1 18 0 V0 Z"/>
+        <path d="M-9 -84 q-26 0 -26 26 v16 a8 8 0 0 0 16 0 v-14 q0-12 10-12 Z"/>
+        <path d="M9 -64 q22 0 22 22 v12 a8 8 0 0 1 -15 0 v-10 q0-10 -7-10 Z"/>
+      </g>
+      <!-- prickly pear clumps -->
+      <g transform="translate(600,470)"><ellipse cx="0" cy="-22" rx="15" ry="20"/><ellipse cx="-18" cy="-34" rx="11" ry="15"/><ellipse cx="17" cy="-30" rx="10" ry="14"/></g>
+      <g transform="translate(820,470)"><ellipse cx="0" cy="-16" rx="12" ry="16"/><ellipse cx="15" cy="-26" rx="9" ry="12"/></g>
+    </g>
+  </svg>
+  <div class="wrap hero-inner">
+    <div class="brought">
+      <span class="bb-label" data-i18n="broughtBy">Brought to you by</span>
+      <img class="bb-logo" src="data:image/png;base64,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1KZNGxoyZMju//73v98QkceO50lMTORO4sC6gV151+fzfel2u8m+fzXpCwAQuPjiiyknJ+c2gGMUt3NwqAPYmzcef/zxYVFRUcQ5N+xxzU5od6y+zzknIYQJADRkyJBdROQRGzduDPXBH3MVagXAmojIb7/9H79efvlVt8bHx+9+5513WmVlZWlutxvLyspqvPKLjY1V6enpPDEx8X+bNm247o8/dgwsLDxocM40IlaphchesVbVDIuIYBim6XbrfNSokcsHD77xw61bt7aIjGRltX3jEhMTVXJysnbHHXd+s3Pnrg83b94yND//gOlyaUJKWeHTO/z8iQiqFvCEIIQGZWVl5fXrR7gGDLgqbejQoe/7/X5Pu3btzOO4DzIzM5NFREQgIv5iWQv++9xzT3fYuTPnwb179xucM+1Ybkfb5A0AkJ+f7/rll/nONuoarNhDVt6IiAIAQAgB5eXl5rZt23Dbtm1NZs2ade3kyZNXTpo0act99913MyLmIyLUlaBpBweHM5N58+aZVvb8/+3bty/13XffbWsYhulyuYSUstK5LnRO5JwDY0wZhoFdu3Y1r7nmmpGIWArNmzclztnhqfWPutpHBHXuuT1p+fKsq+x5qrZXxtarPnz4Hd9ERkYS5xhwu12Vpq7nnFdYYIKWGnEkq5FddLA8MrI+vfbahEIiapScnKydyJuXlZWlbd++fYimaTBmzOifo6IiSdN4ICzMHVJY8s/iiHatJM4x5J6IinaE3ie320WcM9PjcdOjj47bTEStExMTeW0WUSQiZllMGBE1v+SSi3dpmpAul6aq0md0XSPG0GzaNIauuuqqfrZ1wLHAVO8IrQ1ir1zsf9M0TQkhTMYYRURE0CWXXLLulVdeeTCkxpZTVNOxwDg4nMpngFklZVr885//3Gw9ByYABBDR5Jz/pa9bOV8MAAgAAF1wwQXyn//85+CKOcTl0sg+OD+2K8lyB9Ddd99NRNTc2pnCattUbU3AjIi05OTkb63iT6auu8xQV5Gu6xVH0HWkVYgY+98ZY7a4MQFAtWrVmp577rllRHSTPZGd6Do927dv91jfdelrr722NyoqigBAuVwu8/A26Lpecf52e+yf7bbruk4ul8sEACMyMpLGjRu3iojahly7E8a1116zARGoqoUkgyITzbAwNzVr1qif9TGOgKllcWOZYqU1KFCz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QcRviYiH5qUhIpwyZYogIv2ll1764qeffkowDEMyxmrk6bByzSghBAwfPnzbo48++hYiqtTUVFnDcUN5vV5AxNWJiYnXXHzxxfmGYUjbYlKde2HnJBJC8PXr17PXX3/9PiJqnZCQYNZ25W5HwDg4/I0IXcmFHkIIKC8vN03TNCMjI/l1112XN2nSpMlff/11MiL+gYgHAUA54sXhZJCUlCQTExP5gAEDdv3www99Bw0atIExJgzDMG1LyIncdVdbiwUiUqZpsttuu00999xzt7Vs2fIzy8IkD2svS0lJMd577734Tz75ZMiePXsMzjmvqrvosO+0s+3SkCFD2Pjx4xMQscTr9R5XHSKfz6fS0tK0s88+e0Hfvn1vadmypSAipWlalV1IoQHISinUdZ1mzZrlevzxx38iorPXrl2LJys3nBMD4+BwGlpgDrfGSClNwzBYeHi4iI2Nhd69e7/yzDPP/J/b7V4PAMzr9UJqaio54sXhZGLlh+GIuIeI4kaNGvXju+++27mkpES6XC4euo25LmFbh0zTNDjnWt++fVe8++67X7lcrk+Sk5O1hISEQ4J2LasD5efnx99www2fLF++3KhXr54wDANM06xyjEnolmkppezevbt46KGHJui6voWIaqVK/IgRIwyv16unpqbONwzj17feeusiyxJTbfeP7cpTShkffPBB6wYNGvjS09P/kZqaqgPACb+5InRAtIN5jqXAQl8dzkwLQPC1au9lDKv8/jNRjITucrCv2dFyW9iDq5UojwEAxsTEiC5dukB0dPSLb7311romTZq89/LLL0NiYiJPT0+XPp8PDt/m6eBwskSMFXS6i4iu6N2797f/+c9/eixbtkwhouKcc6UUHt7XKxtzTtRiIPTzLTesDAQCGBMToz311FMlI0eO9CHil1lZWVqvXr2MSiwbgIhq06ZN7/z8889RjDFVWlqKoVaLqgonCxkRESEuuOCCNy+66KKHAYDXVq4mIoJu3bpJq7K0b8OGDdOmT5+uCSHIjtWxxpcqfV4gEADOubZjxw5z6tSpt2ZkZPyckJDwVkZGhoiPj5cAANnZ2bWiIQ7vFywoXOgvg+axPsBayDmBgGcYZWVlKET1A/DsLYvV3bZ3JojB0IBG+6E+LBi3wg+PiFJKKQ3DMDVN482bN8drr7229Mknn5zs9/uHTZs27dEmTZq8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" alt="Dr. Lexi" />
+    </div>
+    <span class="eyebrow" data-i18n="eyebrow">A guide for expecting families</span>
+    <h1 data-i18n="heroTitle">Access to Prenatal Care in the Phoenix Metropolitan Area</h1>
+    <p class="lede" data-i18n="heroLede">Find pregnancy clinics, safe shelter, and the support you need across the Valley — wherever you are, whatever your situation.</p>
+  </div>
+</div>
+
+<!-- ============ TABS ============ -->
+<nav class="tabs">
+  <div class="wrap tabs-inner" role="tablist">
+    <button class="tab active" data-tab="clinics" onclick="showTab('clinics')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 7v10M7 12h10" stroke="#1f9e92" stroke-width="2.2" stroke-linecap="round"/><rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="#1f9e92" stroke-width="2"/></svg>
+      <span data-i18n="tabClinics">Pregnancy Clinics</span>
+    </button>
+    <button class="tab" data-tab="shelters" onclick="showTab('shelters')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 11 12 4l8 7" stroke="#df6c4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" stroke="#df6c4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span data-i18n="tabShelters">Women's Shelters</span>
+    </button>
+    <button class="tab" data-tab="resources" onclick="showTab('resources')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.2-7-9.5A7 7 0 0 1 12 4a7 7 0 0 1 7 7.5c0 5.3-7 9.5-7 9.5Z" stroke="#e9a23b" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.4" fill="#e9a23b"/></svg>
+      <span data-i18n="tabResources">Resources &amp; Support</span>
+    </button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ CLINICS ============ -->
+  <section id="clinics" class="panel active">
+    <div class="section-head">
+      <h2 data-i18n="clinicsHead">Pregnancy Clinics</h2>
+      <span class="count-pill" id="clinicCount"></span>
+    </div>
+    <p class="section-sub" data-i18n="clinicsSub">OB-GYN practices, perinatal specialists, and community health centers across the Valley. Choose a neighborhood, then find each location on the map below.</p>
+
+    <div class="disclaimer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01" stroke="#b8860b" stroke-width="2" stroke-linecap="round"/><path d="M10.3 3.9 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="#b8860b" stroke-width="1.8"/></svg>
+      <span data-i18n="clinicsDisc">Always call ahead to confirm hours, accepted insurance, and whether they take new prenatal patients. Many centers offer sliding-scale fees and accept AHCCCS (Arizona Medicaid).</span>
+    </div>
+
+    <div class="hoods" id="clinicHoods"></div>
+    <div class="grid" id="clinicGrid"></div>
+
+    <div class="map-card">
+      <div class="map-head">
+        <h3 data-i18n="clinicMapTitle">Clinic locations</h3>
+        <div class="map-legend"><span><i class="dot" style="background:#1f9e92"></i><span data-i18n="legClinic">Clinic / health center</span></span></div>
+      </div>
+      <div id="clinicMap" class="leaflet-container"></div>
+    </div>
+  </section>
+
+  <!-- ============ SHELTERS ============ -->
+  <section id="shelters" class="panel">
+    <div class="section-head">
+      <h2 data-i18n="sheltersHead">Women's Shelters &amp; Safe Housing</h2>
+      <span class="count-pill" id="shelterCount"></span>
+    </div>
+    <p class="section-sub" data-i18n="sheltersSub">Emergency domestic-violence programs, family shelters, and transitional housing. For safety, most domestic-violence shelters keep their addresses private — you reach them by phone, and they arrange a safe place to go.</p>
+
+    <div class="disclaimer" style="background:#fbece6;border-color:#f1c9b8;color:#8a3b26">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" stroke="#c6553a" stroke-width="1.8"/><path d="M12 8v4M12 15h.01" stroke="#c6553a" stroke-width="2" stroke-linecap="round"/></svg>
+      <span data-i18n="sheltersDisc"><strong>In immediate danger, call 911.</strong> Not sure where to start? The Maricopa County shelter line at <a href="tel:14808903039">480-890-3039</a> screens for every domestic-violence shelter in the county. Spots fill quickly — keep calling, and ask to be placed on a list.</span>
+    </div>
+
+    <div class="hoods" id="shelterHoods"></div>
+    <div class="grid" id="shelterGrid"></div>
+
+    <div class="map-card">
+      <div class="map-head">
+        <h3 data-i18n="shelterMapTitle">Mapped: shelters with public locations</h3>
+        <div class="map-legend">
+          <span><i class="dot" style="background:#df6c4f"></i><span data-i18n="legShelter">Shelter / housing</span></span>
+          <span><i class="dot" style="background:#e9a23b"></i><span data-i18n="legPreg">For pregnant women</span></span>
+        </div>
+      </div>
+      <div id="shelterMap" class="leaflet-container"></div>
+      <p style="margin:0;padding:12px 18px;font-size:.82rem;color:var(--ink-2)" data-i18n="shelterMapNote">Domestic-violence shelters are intentionally not pinned on the map. Call the intake numbers on the cards above — their locations are kept confidential to protect residents.</p>
+    </div>
+  </section>
+
+  <!-- ============ RESOURCES ============ -->
+  <section id="resources" class="panel">
+    <div class="section-head">
+      <h2 data-i18n="resHead">Resources &amp; Support</h2>
+    </div>
+    <p class="section-sub" data-i18n="resSub">Everything around getting care: how to pay for it, your rights, a month-by-month roadmap, food and supplies, and someone to talk to. Start with what you need right now.</p>
+
+    <!-- emergency -->
+    <div class="emergency">
+      <h2><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/><path d="M12 7v6M12 16h.01" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg><span data-i18n="emTitle">If you need help now</span></h2>
+      <p class="e-sub" data-i18n="emSub">These lines are free, confidential, and answered around the clock unless noted.</p>
+      <div class="e-grid">
+        <div class="e-item"><span class="lbl" data-i18n="emDangerL">Immediate danger</span><span class="num"><a href="tel:911">911</a></span><small data-i18n="emDangerS">Call or text. Tell them if you can't speak safely.</small></div>
+        <div class="e-item"><span class="lbl" data-i18n="emDvL">Domestic violence</span><span class="num"><a href="tel:18007997233">1-800-799-7233</a></span><small data-i18n="emDvS">National hotline, 24/7. Text START to 88788.</small></div>
+        <div class="e-item"><span class="lbl" data-i18n="emMhL">Emotional crisis</span><span class="num"><a href="tel:988">988</a></span><small data-i18n="emMhS">Suicide &amp; Crisis Lifeline. Call or text, 24/7.</small></div>
+        <div class="e-item"><span class="lbl" data-i18n="emAnyL">Any resource, 24/7</span><span class="num"><a href="tel:18772118661">2-1-1</a></span><small data-i18n="emAnyS">Arizona 211 connects you to local help.</small></div>
+      </div>
+    </div>
+
+    <!-- need chooser -->
+    <div class="chooser">
+      <h2 data-i18n="chTitle">What do you need right now?</h2>
+      <p data-i18n="chSub">Tap one and we'll jump you to the right place.</p>
+      <div class="chips" id="needChips"></div>
+    </div>
+
+    <div class="res-grid" id="resGrid"></div>
+
+    <!-- trimester roadmap -->
+    <div class="road">
+      <div class="road-head">
+        <h3 data-i18n="roadTitle">Your pregnancy roadmap</h3>
+        <p data-i18n="roadSub">A simple month-by-month checklist. Tap a stage to open it.</p>
+      </div>
+      <div id="roadAcc"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><strong data-i18n="footTitle">About this guide.</strong> <span data-i18n="footBody">This directory was compiled from public listings in June 2026 to help expecting families in the Phoenix metro area find care. Details change — please call ahead to confirm. This site offers information, not medical or legal advice.</span></p>
+    <p data-i18n="footEmerg">In a medical emergency, call 911. An emergency room cannot turn you away when you are in active labor, regardless of your ability to pay or your immigration status.</p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================
+   DATA
+   ========================================================= */
+const CLINIC_HOODS = [
+  ["central","Downtown &amp; Central Phoenix","Centro de Phoenix"],
+  ["north","North Phoenix","Norte de Phoenix"],
+  ["south","South Phoenix","Sur de Phoenix"],
+  ["west","West Phoenix / Maryvale","Oeste de Phoenix / Maryvale"],
+  ["glendale","Glendale","Glendale"],
+  ["scottsdale","Scottsdale","Scottsdale"],
+  ["tempe","Tempe","Tempe"],
+  ["mesa","Mesa","Mesa"],
+  ["chandler","Chandler","Chandler"],
+  ["gilbert","Gilbert","Gilbert"]
+];
+
+const CLINICS = [
+  // Central
+  ["Valley Perinatal Services – Phoenix","central","2620 N 3rd St #102, Phoenix, AZ 85004",33.4773884,-112.0697954,"4807566000",null],
+  ["Central Phoenix Women's Health Care","central","1313 E Osborn Rd #250, Phoenix, AZ 85012",33.4872072,-112.0542347,"6022659161",null],
+  ["Women's Care – Central Phoenix OBGYN","central","4747 N 7th St Ste 150, Phoenix, AZ 85014",33.5072433,-112.063752,"6022402401",null],
+  ["Maricopa OB/GYN","central","1661 E Camelback Rd Unit 160, Phoenix, AZ 85016",33.506986,-112.0454946,"6022411671",null],
+  ["Arizona Gynecology Consultants – Phoenix","central","1008 E McDowell Rd, Phoenix, AZ 85006",33.4659638,-112.0602947,"6023588588",null],
+  ["Planned Parenthood – Central Phoenix","central","4751 N 15th St #3, Phoenix, AZ 85014",33.5071653,-112.0494212,"6022777526",null],
+  ["A Woman's Clinic","central","2023 W Bethany Home Rd, Phoenix, AZ 85015",33.5238563,-112.1032241,"6024625559",null],
+  // North
+  ["Lotus Obstetrics &amp; Gynecology","north","3805 E Bell Rd #4800, Phoenix, AZ 85032",33.6400707,-112.0000357,"6029923162",null],
+  ["Phoenix Women's Clinic","north","8326 N 7th St, Phoenix, AZ 85020",33.5594658,-112.0656668,"6023055100",null],
+  ["Agave Postpartum Wellness","north","15433 N Tatum Blvd Suite 106, Phoenix, AZ 85032",33.6270905,-111.9774285,"6232088242",null],
+  // South
+  ["Mountain Park Women's Health – Baseline","south","303 E Baseline Rd, Phoenix, AZ 85042",33.3767753,-112.0700623,"6022437277","fqhc"],
+  // West
+  ["Life Choices Women's Clinic","west","3516 W McDowell Rd, Phoenix, AZ 85009",33.4661699,-112.1353283,"6023055100",null],
+  ["Planned Parenthood – Desert Sky","west","2020 N 75th Ave #11, Phoenix, AZ 85035",33.4698882,-112.2231262,"6022777526",null],
+  // Glendale
+  ["North Valley Women's Care","glendale","6316 W Union Hills Dr Ste 100, Glendale, AZ 85308",33.6544031,-112.1974651,"6232331300",null],
+  ["Glendale Obstetrics and Gynecology","glendale","5605 W Eugie Ave #102, Glendale, AZ 85304",33.6071081,-112.1814908,"6022988977",null],
+  ["Valley Perinatal Services – Glendale","glendale","5605 W Eugie Ave #111, Glendale, AZ 85304",33.6070828,-112.1814994,"4807566000",null],
+  ["Arizona Maternity &amp; Women's Clinic","glendale","6314 W Union Hills Dr, Glendale, AZ 85308",33.654431,-112.1965265,"6233221800",null],
+  ["Planned Parenthood – Glendale","glendale","5771 W Eugie Ave, Glendale, AZ 85304",33.6082944,-112.1835865,"6022777526",null],
+  // Scottsdale
+  ["Arizona Women's Care","scottsdale","9823 N 95th St #101, Scottsdale, AZ 85258",33.5758481,-111.8744247,"9285697049",null],
+  ["Cornerstone Women's Care OBGYN","scottsdale","9377 E Bell Rd Ste 143, Scottsdale, AZ 85260",33.637365,-111.8821036,"6028672690",null],
+  ["North Scottsdale Women's Health","scottsdale","9745 N 90th Pl, Scottsdale, AZ 85258",33.573707,-111.885031,"4806611485",null],
+  ["Paradise Valley OBGYN","scottsdale","10261 N 92nd St #101, Scottsdale, AZ 85258",33.579002,-111.879076,"4804434437",null],
+  // Tempe
+  ["Southwest Contemporary Women's Care","tempe","6301 S McClintock Dr Unit 215, Tempe, AZ 85283",33.364717,-111.910624,"4808206657",null],
+  // Mesa
+  ["Women's Care Arizona – Mesa","mesa","4824 E Baseline Rd Ste 129, Mesa, AZ 85206",33.3799342,-111.7288612,"4806441001",null],
+  ["Arizona Gynecology Consultants – Mesa","mesa","1151 N Gilbert Rd, Mesa, AZ 85203",33.4369079,-111.7875306,"6023588588",null],
+  // Chandler
+  ["Lilac Ob-Gyn","chandler","655 S Dobson Rd Ste 101, Chandler, AZ 85224",33.2946811,-111.8756382,"4804592555",null],
+  ["New Horizons Women's Care","chandler","1950 W Frye Rd, Chandler, AZ 85224",33.299085,-111.87535,"4808959555",null],
+  ["Valley Perinatal Services – Chandler","chandler","1910 W Frye Rd, Chandler, AZ 85224",33.2989614,-111.8748277,"4807566000",null],
+  ["Sun Life Health OB/GYN","chandler","655 S Dobson Rd #201, Chandler, AZ 85224",33.2946179,-111.8756801,"4803079477","fqhc"],
+  // Gilbert
+  ["WREN Obstetrics, Midwifery &amp; Gynecology","gilbert","3370 Mercy Rd Ste 314, Gilbert, AZ 85297",33.2891522,-111.7494887,"4807820993",null],
+  ["Desert Maternal Fetal Medicine – Gilbert","gilbert","3303 S Lindsay Rd Bldg 6 Unit 113, Gilbert, AZ 85297",33.2895401,-111.7732505,"4806841692",null],
+  ["Women's Care OBGYN in Gilbert","gilbert","3530 S Val Vista Dr, Gilbert, AZ 85297",33.2863266,-111.7568977,"4806336868",null],
+  ["Morning Star OB/GYN","gilbert","3499 Mercy Rd, Gilbert, AZ 85297",33.2851597,-111.7479117,"4803558525",null]
+];
+
+const SHELTER_REGIONS = [
+  ["cphx","Central &amp; South Phoenix","Phoenix Centro y Sur"],
+  ["nphx","North Phoenix","Norte de Phoenix"],
+  ["west","West Valley","Valle Oeste"],
+  ["mesa","Mesa &amp; East Valley","Mesa y Valle Este"],
+  ["chgi","Chandler &amp; Gilbert","Chandler y Gilbert"]
+];
+
+// type: 'dv' (confidential, no map), 'family', 'preg'
+// fields: name, region, type, address|null, lat|null, lng|null, phone, desc_en, desc_es
+const SHELTERS = [
+  ["Sojourner Center","cphx","dv",null,null,null,"6022440089",
+    "One of the nation's largest domestic-violence shelters. Pet friendly, on-site childcare, Spanish-language services.",
+    "Uno de los refugios de violencia doméstica más grandes del país. Admite mascotas, cuidado infantil y servicios en español."],
+  ["De Colores (Chicanos Por La Causa)","cphx","dv",null,null,null,"6022691515",
+    "Bilingual domestic-violence shelter serving South Phoenix. Spanish-language services, pet friendly.",
+    "Refugio bilingüe de violencia doméstica que atiende el sur de Phoenix. Servicios en español, admite mascotas."],
+  ["Maggie's Place – Homes for pregnant women","cphx","preg","4001 N 30th St, Phoenix, AZ 85016",33.4935546,-112.0168916,"6022625555",
+    "Free residential homes for pregnant women, with support through the baby's first year.",
+    "Casas residenciales gratuitas para mujeres embarazadas, con apoyo durante el primer año del bebé."],
+  ["Halle Women's Center at UMOM","cphx","family","3424 E Van Buren St, Phoenix, AZ 85008",33.4517119,-112.0080285,"6023625833",
+    "Emergency shelter for single women, with meals, laundry, and case management toward housing.",
+    "Refugio de emergencia para mujeres solas, con comidas, lavandería y gestión de casos hacia vivienda."],
+  ["Central Arizona Shelter Services (CASS)","cphx","family","230 S 12th Ave, Phoenix, AZ 85007",33.4448876,-112.0888167,"6022566945",
+    "The Valley's largest emergency shelter campus. Open 24 hours.",
+    "El campus de refugio de emergencia más grande del Valle. Abierto las 24 horas."],
+  ["Chrysalis","nphx","dv",null,null,null,"6029444999",
+    "Domestic-violence shelter and counseling in North Phoenix. Service animals welcome.",
+    "Refugio y consejería de violencia doméstica en el norte de Phoenix. Se admiten animales de servicio."],
+  ["CASS Family Shelter (Vista Colina)","nphx","family","1050 W Mountain View Rd, Phoenix, AZ 85021",33.5751393,-112.0866044,"6028708778",
+    "Townhome-style emergency shelter for families, with childcare and a play area.",
+    "Refugio de emergencia tipo casa para familias, con cuidado infantil y área de juegos."],
+  ["A New Leaf – Faith House","west","dv",null,null,null,"6239396798",
+    "Domestic-violence shelter for singles and families in the West Valley.",
+    "Refugio de violencia doméstica para personas solas y familias en el Valle Oeste."],
+  ["New Life Center","west","dv",null,null,null,"6239324404",
+    "One of Arizona's largest DV shelters, based in the West Valley. Pet friendly.",
+    "Uno de los refugios de violencia doméstica más grandes de Arizona, en el Valle Oeste. Admite mascotas."],
+  ["Eve's Place","west","dv","10448 W Coggins Dr, Sun City, AZ 85351",33.5996259,-112.2835949,"6235375380",
+    "Domestic & sexual violence support, counseling, and advocacy in the West Valley.",
+    "Apoyo, consejería y defensa para violencia doméstica y sexual en el Valle Oeste."],
+  ["A New Leaf – CAAFA","mesa","dv",null,null,null,"4807732359",
+    "Domestic-violence shelter for singles and families (Apache Junction / East Valley).",
+    "Refugio de violencia doméstica para personas solas y familias (Apache Junction / Valle Este)."],
+  ["House of Refuge","mesa","family","6935 E Williams Field Rd, Mesa, AZ 85212",33.3065272,-111.6830338,"4809889242",
+    "Transitional housing for families working toward stability after a crisis.",
+    "Vivienda de transición para familias que buscan estabilidad tras una crisis."],
+  ["The Olive Press","mesa","family","720 S Mesa Dr, Mesa, AZ 85210",33.4018845,-111.8233456,null,
+    "Faith-based transitional shelter for women. Confirm current intake by dialing 2-1-1.",
+    "Refugio de transición para mujeres, de base religiosa. Confirme la admisión actual marcando 2-1-1."],
+  ["My Sister's Place","chgi","dv",null,null,null,"4808211024",
+    "Domestic-violence shelter for singles and families in Chandler. Service animals welcome.",
+    "Refugio de violencia doméstica para personas solas y familias en Chandler. Se admiten animales de servicio."]
+];
+
+/* =========================================================
+   I18N (UI strings)
+   ========================================================= */
+const I18N = {
+  en:{
+    brand:"Prenatal Care • Phoenix Metro", broughtBy:"Brought to you by",
+    eyebrow:"A guide for expecting families",
+    heroTitle:"Access to Prenatal Care in the Phoenix Metropolitan Area",
+    heroLede:"Find pregnancy clinics, safe shelter, and the support you need across the Valley — wherever you are, whatever your situation.",
+    tabClinics:"Pregnancy Clinics", tabShelters:"Women's Shelters", tabResources:"Resources & Support",
+    clinicsHead:"Pregnancy Clinics",
+    clinicsSub:"OB-GYN practices, perinatal specialists, and community health centers across the Valley. Choose a neighborhood, then find each location on the map below.",
+    clinicsDisc:"Always call ahead to confirm hours, accepted insurance, and whether they take new prenatal patients. Many centers offer sliding-scale fees and accept AHCCCS (Arizona Medicaid).",
+    clinicMapTitle:"Clinic locations", legClinic:"Clinic / health center",
+    sheltersHead:"Women's Shelters & Safe Housing",
+    sheltersSub:"Emergency domestic-violence programs, family shelters, and transitional housing. For safety, most domestic-violence shelters keep their addresses private — you reach them by phone, and they arrange a safe place to go.",
+    shelterMapTitle:"Mapped: shelters with public locations",
+    legShelter:"Shelter / housing", legPreg:"For pregnant women",
+    shelterMapNote:"Domestic-violence shelters are intentionally not pinned on the map. Call the intake numbers on the cards above — their locations are kept confidential to protect residents.",
+    resHead:"Resources & Support",
+    resSub:"Everything around getting care: how to pay for it, your rights, a month-by-month roadmap, food and supplies, and someone to talk to. Start with what you need right now.",
+    emTitle:"If you need help now", emSub:"These lines are free, confidential, and answered around the clock unless noted.",
+    emDangerL:"Immediate danger", emDangerS:"Call or text. Tell them if you can't speak safely.",
+    emDvL:"Domestic violence", emDvS:"National hotline, 24/7. Text START to 88788.",
+    emMhL:"Emotional crisis", emMhS:"Suicide & Crisis Lifeline. Call or text, 24/7.",
+    emAnyL:"Any resource, 24/7", emAnyS:"Arizona 211 connects you to local help.",
+    chTitle:"What do you need right now?", chSub:"Tap one and we'll jump you to the right place.",
+    roadTitle:"Your pregnancy roadmap", roadSub:"A simple month-by-month checklist. Tap a stage to open it.",
+    footTitle:"About this guide.",
+    footBody:"This directory was compiled from public listings in June 2026 to help expecting families in the Phoenix metro area find care. Details change — please call ahead to confirm. This site offers information, not medical or legal advice.",
+    footEmerg:"In a medical emergency, call 911. An emergency room cannot turn you away when you are in active labor, regardless of your ability to pay or your immigration status.",
+    call:"Call", maps:"Open in Maps", confidential:"Confidential — call first",
+    forPregnant:"For pregnant women", communityHealth:"Sliding scale",
+    clinicsN:"clinics", sheltersN:"programs"
+  },
+  es:{
+    brand:"Cuidado Prenatal • Área de Phoenix", broughtBy:"Presentado por",
+    eyebrow:"Una guía para familias que esperan un bebé",
+    heroTitle:"Acceso al Cuidado Prenatal en el Área Metropolitana de Phoenix",
+    heroLede:"Encuentre clínicas de embarazo, refugio seguro y el apoyo que necesita en todo el Valle — donde sea que esté y sea cual sea su situación.",
+    tabClinics:"Clínicas de Embarazo", tabShelters:"Refugios para Mujeres", tabResources:"Recursos y Apoyo",
+    clinicsHead:"Clínicas de Embarazo",
+    clinicsSub:"Consultorios de ginecología y obstetricia, especialistas perinatales y centros de salud comunitarios en todo el Valle. Elija un vecindario y luego ubique cada lugar en el mapa.",
+    clinicsDisc:"Llame siempre antes para confirmar horarios, seguros aceptados y si reciben nuevas pacientes prenatales. Muchos centros ofrecen tarifas según ingresos y aceptan AHCCCS (Medicaid de Arizona).",
+    clinicMapTitle:"Ubicación de las clínicas", legClinic:"Clínica / centro de salud",
+    sheltersHead:"Refugios y Vivienda Segura para Mujeres",
+    sheltersSub:"Programas de emergencia para violencia doméstica, refugios familiares y vivienda de transición. Por seguridad, la mayoría de los refugios de violencia doméstica mantienen su dirección en privado — usted los contacta por teléfono y ellos coordinan un lugar seguro.",
+    shelterMapTitle:"En el mapa: refugios con ubicación pública",
+    legShelter:"Refugio / vivienda", legPreg:"Para embarazadas",
+    shelterMapNote:"Los refugios de violencia doméstica no se marcan en el mapa a propósito. Llame a los números de admisión en las tarjetas de arriba — su ubicación es confidencial para proteger a las residentes.",
+    resHead:"Recursos y Apoyo",
+    resSub:"Todo lo relacionado con recibir atención: cómo pagarla, sus derechos, una guía mes a mes, comida y artículos, y alguien con quien hablar. Empiece con lo que necesita ahora.",
+    emTitle:"Si necesita ayuda ahora", emSub:"Estas líneas son gratuitas, confidenciales y atienden las 24 horas, salvo que se indique.",
+    emDangerL:"Peligro inmediato", emDangerS:"Llame o envíe un texto. Avise si no puede hablar con seguridad.",
+    emDvL:"Violencia doméstica", emDvS:"Línea nacional, 24/7. Envíe START al 88788.",
+    emMhL:"Crisis emocional", emMhS:"Línea de Crisis y Suicidio. Llame o envíe un texto, 24/7.",
+    emAnyL:"Cualquier recurso, 24/7", emAnyS:"Arizona 211 lo conecta con ayuda local.",
+    chTitle:"¿Qué necesita ahora mismo?", chSub:"Toque una opción y lo llevamos al lugar indicado.",
+    roadTitle:"Su guía del embarazo", roadSub:"Una lista sencilla mes a mes. Toque una etapa para abrirla.",
+    footTitle:"Acerca de esta guía.",
+    footBody:"Este directorio se recopiló de listados públicos en junio de 2026 para ayudar a las familias que esperan un bebé en el área de Phoenix a encontrar atención. Los datos cambian — por favor llame antes para confirmar. Este sitio ofrece información, no consejo médico ni legal.",
+    footEmerg:"En una emergencia médica, llame al 911. Una sala de emergencias no puede rechazarla cuando está en trabajo de parto activo, sin importar su capacidad de pago ni su estatus migratorio.",
+    call:"Llamar", maps:"Abrir en Mapas", confidential:"Confidencial — llame primero",
+    forPregnant:"Para embarazadas", communityHealth:"Según ingresos",
+    clinicsN:"clínicas", sheltersN:"programas"
+  }
+};
+
+/* =========================================================
+   RESOURCE CARDS + CHOOSER + ROADMAP CONTENT
+   ========================================================= */
+const RES_ICON = {
+  pay:["#1f9e92",'<path d="M3 7h18v10H3z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="2.4" stroke="#fff" stroke-width="2"/>'],
+  food:["#5b7f4d",'<path d="M6 3v8M9 3v8M6 11h3v9H6zM16 3c-2 0-3 3-3 6 0 2 1 3 3 3v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'],
+  rights:["#2c2a4a",'<path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'],
+  imm:["#df6c4f",'<circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" stroke="#fff" stroke-width="1.6"/>'],
+  mind:["#7d4f74",'<path d="M9 18h6M10 21h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M12 3a6 6 0 0 0-4 10c1 1 1 2 1 3h6c0-1 0-2 1-3a6 6 0 0 0-4-10Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>'],
+  supply:["#e9a23b",'<path d="M3 8h18l-1.5 11.5a1 1 0 0 1-1 .9H5.5a1 1 0 0 1-1-.9L3 8Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M8 8a4 4 0 0 1 8 0" stroke="#fff" stroke-width="2"/>']
+};
+
+function R(en,es){return {en,es};}
+const RESOURCES = [
+  {
+    id:"pay", icon:"pay",
+    title:R("Paying for care","Cómo pagar la atención"),
+    body:R("Cost should never stop you from getting prenatal care. These programs cover most pregnant Arizonans.",
+            "El costo nunca debe impedirle recibir atención prenatal. Estos programas cubren a la mayoría de las embarazadas en Arizona."),
+    rows:[
+      [R("AHCCCS (Arizona Medicaid)","AHCCCS (Medicaid de Arizona)"), R("Apply anytime","Solicite en cualquier momento"),"https://www.healthearizonaplus.gov"],
+      [R("Pregnancy coverage — income-based","Cobertura de embarazo según ingresos"), R("healthearizonaplus.gov",""),"https://www.healthearizonaplus.gov"],
+      [R("KidsCare (for your children)","KidsCare (para sus hijos)"), R("azahcccs.gov",""),"https://www.azahcccs.gov/Members/GetCovered/Categories/KidsCare.html"],
+      [R("Sliding-scale health centers","Centros de salud según ingresos"), R("Dial 2-1-1","Marque 2-1-1"),"tel:18772118661"],
+      [R("Can't be denied emergency care","No le pueden negar atención de emergencia"), R("Federal law","Ley federal"),null]
+    ]
+  },
+  {
+    id:"food", icon:"food",
+    title:R("Food & nutrition (WIC)","Comida y nutrición (WIC)"),
+    body:R("WIC gives pregnant people and children under 5 free healthy food, formula, and breastfeeding support.",
+            "WIC ofrece a embarazadas y niños menores de 5 años comida saludable gratis, fórmula y apoyo para amamantar."),
+    rows:[
+      [R("Find your local WIC clinic","Encuentre su clínica WIC"), R("azwic.gov",""),"https://azdhs.gov/azwic"],
+      [R("Apply or ask questions","Solicite o haga preguntas"), R("Dial 2-1-1","Marque 2-1-1"),"tel:18772118661"],
+      [R("Free food bank near you","Banco de alimentos cercano"), R("Dial 2-1-1","Marque 2-1-1"),"tel:18772118661"]
+    ]
+  },
+  {
+    id:"rights", icon:"rights",
+    title:R("Know your rights","Conozca sus derechos"),
+    body:R("A few protections worth knowing as you seek care in Arizona.",
+            "Algunas protecciones importantes mientras busca atención en Arizona."),
+    rows:[
+      [R("ERs must help you in active labor","Las salas de emergencia deben atenderla en parto"), R("EMTALA",""),null],
+      [R("Care regardless of immigration status","Atención sin importar estatus migratorio"), R("Yes","Sí"),null],
+      [R("Emergency Medicaid covers labor & delivery","Medicaid de emergencia cubre el parto"), R("Any status","Cualquier estatus"),null],
+      [R("Your medical records are confidential","Su expediente médico es confidencial"), R("HIPAA",""),null],
+      [R("Address confidentiality for DV survivors","Dirección confidencial para sobrevivientes"), R("AZ program","Programa AZ"),"https://azsos.gov/services/address-confidentiality-program-acp"]
+    ]
+  },
+  {
+    id:"imm", icon:"imm",
+    title:R("For immigrant & Spanish-speaking families","Para familias inmigrantes y de habla hispana"),
+    body:R("You can get prenatal and emergency care in Arizona no matter your immigration status. Using WIC, emergency Medicaid, or prenatal care is not counted against you in a public-charge review.",
+            "Puede recibir atención prenatal y de emergencia en Arizona sin importar su estatus migratorio. Usar WIC, Medicaid de emergencia o atención prenatal no cuenta en su contra en una revisión de carga pública."),
+    rows:[
+      [R("De Colores — Spanish DV services","De Colores — servicios DV en español"), R("602-269-1515",""),"tel:16022691515"],
+      [R("Community centers with Spanish staff","Centros con personal en español"), R("Dial 2-1-1","Marque 2-1-1"),"tel:18772118661"],
+      [R("Free immigration legal help","Ayuda legal de inmigración gratuita"), R("Florence Project","Florence Project"),"https://firrp.org"]
+    ]
+  },
+  {
+    id:"mind", icon:"mind",
+    title:R("Mental & emotional health","Salud mental y emocional"),
+    body:R("Pregnancy and new parenthood are a lot. Support is available 24/7, and reaching out is a sign of strength.",
+            "El embarazo y la maternidad son mucho. Hay apoyo disponible 24/7, y pedir ayuda es señal de fortaleza."),
+    rows:[
+      [R("National Maternal Mental Health Hotline","Línea Nacional de Salud Mental Materna"), R("1-833-852-6262",""),"tel:18338526262"],
+      [R("Postpartum Support International","Apoyo Posparto Internacional"), R("1-800-944-4773",""),"tel:18009444773"],
+      [R("Suicide & Crisis Lifeline","Línea de Crisis y Suicidio"), R("Call or text 988","Llame o texto 988"),"tel:988"]
+    ]
+  },
+  {
+    id:"supply", icon:"supply",
+    title:R("Free supplies & extra support","Artículos gratis y apoyo adicional"),
+    body:R("Diapers, car seats, home visits from a nurse, and people in your corner — at little or no cost.",
+            "Pañales, asientos de auto, visitas de enfermeras a domicilio y personas que la apoyan — a bajo costo o gratis."),
+    rows:[
+      [R("Maggie's Place — homes for pregnant women","Maggie's Place — casas para embarazadas"), R("602-262-5555",""),"tel:16022625555"],
+      [R("Healthy Families AZ — free home visits","Healthy Families AZ — visitas gratis"), R("Learn more","Más información"),"https://strongfamiliesaz.com/program/healthy-families/"],
+      [R("Diaper Bank of Central Arizona","Banco de Pañales de Arizona Central"), R("diaperbankaz.org",""),"https://diaperbankaz.org"],
+      [R("Fresh Start Women's Foundation","Fundación Fresh Start"), R("602-252-8494",""),"tel:16022528494"],
+      [R("Hope Women's Center","Hope Women's Center"), R("602-715-0999",""),"tel:16027150999"]
+    ]
+  }
+];
+
+const NEEDS = [
+  ["pay","#1f9e92",R("I can't afford care","No puedo pagar la atención")],
+  ["imm","#df6c4f",R("No insurance / undocumented","Sin seguro / indocumentada")],
+  ["rights","#2c2a4a",R("Will they help me?","¿Me van a atender?")],
+  ["food","#5b7f4d",R("I need food or diapers","Necesito comida o pañales")],
+  ["mind","#7d4f74",R("I'm struggling emotionally","Me siento agobiada")],
+  ["supply","#e9a23b",R("I need baby supplies & support","Necesito artículos y apoyo")]
+];
+
+const ROADMAP = [
+  ["#5b7f4d", R("Just found out — weeks 1–12","Recién se enteró — semanas 1–12"),
+    R("<li>Start a prenatal vitamin with folic acid today.</li><li>Book your first prenatal visit (usually around weeks 8–10).</li><li>Apply for AHCCCS and WIC — don't wait for the first appointment.</li><li>Avoid alcohol, tobacco, and unprescribed meds; ask about anything you're unsure of.</li>",
+      "<li>Empiece hoy una vitamina prenatal con ácido fólico.</li><li>Agende su primera consulta prenatal (normalmente entre las semanas 8 y 10).</li><li>Solicite AHCCCS y WIC — no espere a la primera cita.</li><li>Evite alcohol, tabaco y medicamentos sin receta; pregunte ante cualquier duda.</li>")],
+  ["#1f9e92", R("Second trimester — weeks 13–27","Segundo trimestre — semanas 13–27"),
+    R("<li>Anatomy ultrasound around week 20.</li><li>Glucose screening for gestational diabetes (~weeks 24–28).</li><li>Choose the hospital where you'll give birth.</li><li>This is often the best window to travel or take a class.</li>",
+      "<li>Ecografía anatómica alrededor de la semana 20.</li><li>Prueba de glucosa para diabetes gestacional (~semanas 24–28).</li><li>Elija el hospital donde dará a luz.</li><li>Suele ser el mejor momento para viajar o tomar una clase.</li>")],
+  ["#e9a23b", R("Third trimester — weeks 28–40","Tercer trimestre — semanas 28–40"),
+    R("<li>More frequent visits; Group B strep test around week 36.</li><li>Write a simple birth plan and pack your hospital bag.</li><li>Choose a pediatrician and install your car seat.</li><li>Know the signs of labor and when to call your provider.</li>",
+      "<li>Consultas más frecuentes; prueba de estreptococo grupo B hacia la semana 36.</li><li>Escriba un plan de parto sencillo y prepare su maleta.</li><li>Elija un pediatra e instale el asiento de auto.</li><li>Conozca las señales del parto y cuándo llamar a su proveedor.</li>")],
+  ["#df6c4f", R("After birth — the fourth trimester","Después del parto — el cuarto trimestre"),
+    R("<li>Go to your postpartum checkup (around 6 weeks).</li><li>Ask for a mental-health check — the baby blues vs. postpartum depression.</li><li>Free lactation support is available; call your provider or 2-1-1.</li><li>Keep WIC going — it covers you and baby after birth too.</li>",
+      "<li>Acuda a su control posparto (alrededor de las 6 semanas).</li><li>Pida una evaluación de salud mental — diferenciar la tristeza posparto de la depresión.</li><li>Hay apoyo gratuito de lactancia; llame a su proveedor o al 2-1-1.</li><li>Mantenga WIC — también la cubre a usted y al bebé después del parto.</li>")]
+];
+
+/* =========================================================
+   STATE + HELPERS
+   ========================================================= */
+let lang = "en";
+let clinicHood = "all";
+let shelterRegion = "all";
+let clinicMap, shelterMap, clinicLayer, shelterLayer;
+let mapsReady = {clinics:false, shelters:false};
+
+const t = k => I18N[lang][k];
+const tx = o => o[lang];
+const fmtPhone = p => p ? p.replace(/^1?(\d{3})(\d{3})(\d{4})$/, "($1) $2-$3") : "";
+const gmaps = (name,addr) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(name.replace(/&amp;/g,"&")+" "+addr);
+const hoodLabel = (arr,id) => { const r = arr.find(x=>x[0]===id); return r ? r[lang==="en"?1:2] : id; };
+
+function pinSVG(color){
+  return '<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">'+
+    '<path d="M15 0C7 0 1 6 1 14c0 9 14 26 14 26s14-17 14-26C29 6 23 0 15 0Z" fill="'+color+'" stroke="#fff" stroke-width="2"/>'+
+    '<circle cx="15" cy="14" r="5" fill="#fff"/></svg>';
+}
+function makeIcon(color){
+  return L.divIcon({html:pinSVG(color), className:"", iconSize:[30,40], iconAnchor:[15,40], popupAnchor:[0,-36]});
+}
+
+/* =========================================================
+   RENDERERS
+   ========================================================= */
+function renderClinicHoods(){
+  const wrap = document.getElementById("clinicHoods");
+  const counts = {};
+  CLINICS.forEach(c=>counts[c[1]]=(counts[c[1]]||0)+1);
+  let html = `<button class="hood ${clinicHood==='all'?'active':''}" onclick="setClinicHood('all')">${lang==='en'?'All areas':'Todas las áreas'} <span class="n">(${CLINICS.length})</span></button>`;
+  CLINIC_HOODS.forEach(h=>{
+    html += `<button class="hood ${clinicHood===h[0]?'active':''}" onclick="setClinicHood('${h[0]}')">${lang==='en'?h[1]:h[2]} <span class="n">(${counts[h[0]]||0})</span></button>`;
+  });
+  wrap.innerHTML = html;
+}
+function renderClinics(){
+  const grid = document.getElementById("clinicGrid");
+  const list = CLINICS.filter(c=>clinicHood==='all'||c[1]===clinicHood);
+  document.getElementById("clinicCount").textContent = list.length+" "+t("clinicsN");
+  grid.innerHTML = list.map(c=>{
+    const [name,hood,addr,lat,lng,phone,flag]=c;
+    const badge = flag==='fqhc' ? `<span class="badge badge-fqhc">${t("communityHealth")}</span>` : "";
+    return `<div class="card">${badge}
+      <div class="hoodtag">${hoodLabel(CLINIC_HOODS,hood)}</div>
+      <h3>${name}</h3>
+      <p class="addr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" stroke="#9a8" stroke-width="2"/><circle cx="12" cy="11" r="2.5" stroke="#9a8" stroke-width="2"/></svg>${addr}</p>
+      <div class="card-actions">
+        <a class="btn btn-map" target="_blank" rel="noopener" href="${gmaps(name,addr)}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="11" r="2.5" fill="#fff"/></svg>${t("maps")}</a>
+        ${phone?`<a class="btn btn-call" href="tel:1${phone}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" stroke="#2c2a4a" stroke-width="1.8" stroke-linejoin="round"/></svg>${fmtPhone(phone)}</a>`:""}
+      </div></div>`;
+  }).join("");
+  refreshClinicMarkers();
+}
+
+function renderShelterHoods(){
+  const wrap = document.getElementById("shelterHoods");
+  const counts = {};
+  SHELTERS.forEach(s=>counts[s[1]]=(counts[s[1]]||0)+1);
+  let html = `<button class="hood ${shelterRegion==='all'?'active':''}" onclick="setShelterRegion('all')">${lang==='en'?'All areas':'Todas las áreas'} <span class="n">(${SHELTERS.length})</span></button>`;
+  SHELTER_REGIONS.forEach(h=>{
+    html += `<button class="hood ${shelterRegion===h[0]?'active':''}" onclick="setShelterRegion('${h[0]}')">${lang==='en'?h[1]:h[2]} <span class="n">(${counts[h[0]]||0})</span></button>`;
+  });
+  wrap.innerHTML = html;
+}
+function renderShelters(){
+  const grid = document.getElementById("shelterGrid");
+  const list = SHELTERS.filter(s=>shelterRegion==='all'||s[1]===shelterRegion);
+  document.getElementById("shelterCount").textContent = list.length+" "+t("sheltersN");
+  grid.innerHTML = list.map(s=>{
+    const [name,region,type,addr,lat,lng,phone,den,des]=s;
+    const desc = lang==='en'?den:des;
+    let badge="";
+    if(type==='dv') badge=`<span class="badge badge-conf">${t("confidential")}</span>`;
+    else if(type==='preg') badge=`<span class="badge badge-preg">${t("forPregnant")}</span>`;
+    const mapsBtn = addr ? `<a class="btn btn-map" target="_blank" rel="noopener" href="${gmaps(name,addr)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="11" r="2.5" fill="#fff"/></svg>${t("maps")}</a>` : "";
+    const callBtn = phone ? `<a class="btn btn-call" href="tel:1${phone}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" stroke="#2c2a4a" stroke-width="1.8" stroke-linejoin="round"/></svg>${fmtPhone(phone)}</a>` : "";
+    return `<div class="card">${badge}
+      <div class="hoodtag">${hoodLabel(SHELTER_REGIONS,region)}</div>
+      <h3>${name}</h3>
+      ${addr?`<p class="addr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" stroke="#d9a" stroke-width="2"/><circle cx="12" cy="11" r="2.5" stroke="#d9a" stroke-width="2"/></svg>${addr}</p>`:""}
+      <div class="card-actions">${mapsBtn}${callBtn}</div>
+      <p class="note">${desc}</p>
+    </div>`;
+  }).join("");
+  refreshShelterMarkers();
+}
+
+/* ---- maps ---- */
+function initClinicMap(){
+  if(mapsReady.clinics) return;
+  clinicMap = L.map("clinicMap",{scrollWheelZoom:false}).setView([33.45,-111.95],10);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(clinicMap);
+  clinicLayer = L.layerGroup().addTo(clinicMap);
+  mapsReady.clinics=true;
+  refreshClinicMarkers();
+}
+function refreshClinicMarkers(){
+  if(!mapsReady.clinics) return;
+  clinicLayer.clearLayers();
+  const list = CLINICS.filter(c=>clinicHood==='all'||c[1]===clinicHood);
+  const icon = makeIcon("#1f9e92");
+  const bounds=[];
+  list.forEach(c=>{
+    const [name,hood,addr,lat,lng]=c;
+    bounds.push([lat,lng]);
+    L.marker([lat,lng],{icon}).addTo(clinicLayer).bindPopup(
+      `<div class="pin-name">${name}</div><div class="pin-addr">${addr}</div><a class="pin-link" target="_blank" rel="noopener" href="${gmaps(name,addr)}">${t("maps")} →</a>`
+    );
+  });
+  if(bounds.length) clinicMap.fitBounds(bounds,{padding:[40,40],maxZoom:13});
+}
+function initShelterMap(){
+  if(mapsReady.shelters) return;
+  shelterMap = L.map("shelterMap",{scrollWheelZoom:false}).setView([33.45,-111.95],10);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'© OpenStreetMap'}).addTo(shelterMap);
+  shelterLayer = L.layerGroup().addTo(shelterMap);
+  mapsReady.shelters=true;
+  refreshShelterMarkers();
+}
+function refreshShelterMarkers(){
+  if(!mapsReady.shelters) return;
+  shelterLayer.clearLayers();
+  const list = SHELTERS.filter(s=>(shelterRegion==='all'||s[1]===shelterRegion) && s[3]);
+  const bounds=[];
+  list.forEach(s=>{
+    const [name,region,type,addr,lat,lng]=s;
+    bounds.push([lat,lng]);
+    const icon = makeIcon(type==='preg'?"#e9a23b":"#df6c4f");
+    L.marker([lat,lng],{icon}).addTo(shelterLayer).bindPopup(
+      `<div class="pin-name">${name}</div><div class="pin-addr">${addr}</div><a class="pin-link" target="_blank" rel="noopener" href="${gmaps(name,addr)}">${t("maps")} →</a>`
+    );
+  });
+  if(bounds.length) shelterMap.fitBounds(bounds,{padding:[40,40],maxZoom:12});
+  else shelterMap.setView([33.45,-111.95],10);
+}
+
+/* ---- resources ---- */
+function renderResources(){
+  document.getElementById("resGrid").innerHTML = RESOURCES.map(r=>{
+    const [col,path]=RES_ICON[r.icon];
+    const rows = r.rows.map(([k,v,href])=>{
+      const val = href ? `<a class="v" href="${href}" ${href.startsWith('http')?'target="_blank" rel="noopener"':''}>${tx(v)}</a>` : `<span class="v plain">${tx(v)}</span>`;
+      return `<li><span class="k">${tx(k)}</span>${val}</li>`;
+    }).join("");
+    return `<div class="res" id="res-${r.id}">
+      <div class="rh"><div class="ric" style="background:${col}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none">${path}</svg></div><h3>${tx(r.title)}</h3></div>
+      <p>${tx(r.body)}</p><ul>${rows}</ul></div>`;
+  }).join("");
+}
+function renderChips(){
+  document.getElementById("needChips").innerHTML = NEEDS.map(([id,col,label])=>
+    `<button class="chip" onclick="jumpTo('${id}')"><span class="ic" style="background:${col}">●</span>${tx(label)}</button>`
+  ).join("");
+}
+function jumpTo(id){
+  const el = document.getElementById("res-"+id);
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+  el.classList.add("flash");
+  setTimeout(()=>el.classList.remove("flash"),1800);
+}
+function renderRoadmap(){
+  document.getElementById("roadAcc").innerHTML = ROADMAP.map((r,i)=>{
+    const [col,title,body]=r;
+    return `<div class="acc" id="acc-${i}">
+      <button class="acc-btn" onclick="toggleAcc(${i})">
+        <span class="acc-num" style="background:${col}">${i+1}</span>
+        <span class="at">${tx(title)}</span><span class="ax">+</span>
+      </button>
+      <div class="acc-body"><div class="inner"><ul>${tx(body)}</ul></div></div>
+    </div>`;
+  }).join("");
+}
+function toggleAcc(i){
+  const acc = document.getElementById("acc-"+i);
+  const body = acc.querySelector(".acc-body");
+  const open = acc.classList.toggle("open");
+  body.style.maxHeight = open ? body.scrollHeight+"px" : null;
+}
+
+/* =========================================================
+   CONTROLLERS
+   ========================================================= */
+function setClinicHood(h){ clinicHood=h; renderClinicHoods(); renderClinics(); }
+function setShelterRegion(r){ shelterRegion=r; renderShelterHoods(); renderShelters(); }
+
+function showTab(id){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===id));
+  if(id==="clinics"){ initClinicMap(); setTimeout(()=>{clinicMap&&clinicMap.invalidateSize(); refreshClinicMarkers();},60); }
+  if(id==="shelters"){ initShelterMap(); setTimeout(()=>{shelterMap&&shelterMap.invalidateSize(); refreshShelterMarkers();},60); }
+  window.scrollTo({top:document.querySelector("nav.tabs").offsetTop-70,behavior:"smooth"});
+}
+
+function applyStaticI18n(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k = el.getAttribute("data-i18n");
+    if(I18N[lang][k]!==undefined) el.innerHTML = I18N[lang][k];
+  });
+}
+function setLang(l){
+  lang=l;
+  document.getElementById("btn-en").classList.toggle("active",l==="en");
+  document.getElementById("btn-es").classList.toggle("active",l==="es");
+  applyStaticI18n();
+  renderClinicHoods(); renderClinics();
+  renderShelterHoods(); renderShelters();
+  renderChips(); renderResources(); renderRoadmap();
+}
+
+/* init */
+applyStaticI18n();
+renderClinicHoods(); renderClinics();
+renderShelterHoods(); renderShelters();
+renderChips(); renderResources(); renderRoadmap();
+initClinicMap();
+setTimeout(()=>{clinicMap&&clinicMap.invalidateSize(); refreshClinicMarkers();},200);
+</script>
+</body>
+</html>
